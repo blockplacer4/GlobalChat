@@ -2,12 +2,30 @@ import aiosqlite
 import asyncio
 from configparser import ConfigParser
 import os
+import datetime
+
+async def clear_db():
+    pass
+
+async def check():
+    config = ConfigParser()
+    config.read("./configuration.cfg")
+    if not config.has_section("DB") or not config.has_option("DB", "last_clear"):
+        if not config.has_section("DB"): config.add_section("DB")
+        config['DB'] = {
+            'last_clear': f'{datetime.datetime.now()}'
+        }
+        with open('configuration.cfg', 'w') as config_file:
+            config.write(config_file)
+    else:
+        db_last_clear = config.get("DB", "last_clear")
 
 
 async def get_DB_path():
     config = ConfigParser()
     config.read("./configuration.cfg")
     if not config.has_section("DB") or not config.has_option("DB", "db_path"):
+        if not config.has_section("DB"): config.add_section("DB")
         config['DB'] = {
             'db_path': './world.db'
         }
@@ -34,15 +52,36 @@ async def get_DC_token():
 
 
 async def get_next_id(database_name, table_name):
+    print(1)
     conn = await aiosqlite.connect(database_name)
+    print(2)
     cursor = await conn.cursor()
-    await cursor.execute(f"SELECT COUNT(*) FROM {table_name};")
-    next_id = await cursor.fetchone()
+    print(3)
+    try:
+        await cursor.execute(f"SELECT COUNT(*) FROM {table_name};")  # f"SELECT COUNT(*) FROM {table_name};"
+    except Exception as e:
+        print(e.with_traceback(e))
+    print(4)
+    try:
+        next_id = await cursor.fetchall()
+    except Exception as e:
+        print(e.with_traceback(e))
+        next_id = None
+    print(f"5 {next_id[0]}")
     try:
         await conn.close()
-        return int(next_id[0]) + 1
+        print(6)
+        if next_id is None:
+            print("[FAIL] dbTools.py")
+        else:
+            next_number = next_id[0]
+            print(f"- {next_number}")
+            next_number = next_number[0]
+            print(f"-- {next_number}")
+            return next_number + 1
     except ValueError as e:
         print(e.with_traceback(e))
+        print(7)
     await conn.close()
 
 
@@ -64,18 +103,30 @@ async def create_table(database_name, table_name, *columns):
 async def insert_data(database_name, table_name, id, channel_id, webhook_url):
     conn = await aiosqlite.connect(database_name)
     cursor = await conn.cursor()
-    await cursor.execute(f'INSERT INTO {table_name} VALUES ()', (id, channel_id, webhook_url))
+    print(f'INSERT INTO {table_name} VALUES ({id}, {channel_id}, {webhook_url})')
+    await cursor.execute(f"INSERT INTO {table_name} (id, channel_id, webhook_url) VALUES (?, ?, ?);",
+                         (id, channel_id, webhook_url))
     await conn.commit()
     await cursor.close()
     await conn.close()
 
 
-async def view_data(database_name, table_name, id):
+async def view_dat_row(database_name, table_name, id):
     conn = await aiosqlite.connect(database_name)
     cursor = await conn.cursor()
     id = {"id": id}
     for column, value in id.items():
         await cursor.execute(f'SELECT * FROM {table_name} WHERE {column} = ?', (value,))
+    rows = await cursor.fetchall()
+    await cursor.close()
+    await conn.close()
+    return rows
+
+
+async def view_data(database_name, table_name, column, value):
+    conn = await aiosqlite.connect(database_name)
+    cursor = await conn.cursor()
+    await cursor.execute(f'SELECT * FROM {table_name} WHERE {column} = ?', (value,))
     rows = await cursor.fetchall()
     await cursor.close()
     await conn.close()

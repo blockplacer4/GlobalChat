@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.commands import slash_command
 import asyncpg
 import aiohttp
 from source import dbTools
@@ -13,56 +14,50 @@ class GlobalChat(commands.Cog):
         self.webhook_session = aiohttp.ClientSession()
 
     async def get_webhook(self, channel_id):
-        channel = self.bot.get_channel(channel_id)
-        if not channel:
-            return None
-        webhooks = await channel.webhooks()
-        webhook = discord.utils.get(webhooks, name="GlobalChat")
-        if not webhook:
-            webhook = await channel.create_webhook(name="GlobalChat")
-        return webhook.url
+        try:
+            channel = self.bot.get_channel(channel_id)
+            if not channel:
+                return None
+            webhooks = await channel.webhooks()
+            webhook = discord.utils.get(webhooks, name="GlobalChat")
+            if not webhook:
+                webhook = await channel.create_webhook(name="GlobalChat")
+            return webhook.url
+        except Exception as e:
+            print(e.with_traceback(e))
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.errors.CheckFailure):
             await ctx.send("No Permission, yk yk.")
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot:
-            return
-        async with self.bot.pool.acquire() as conn:
-            records = await conn.fetch("SELECT channel_id FROM global_channels")
-        for record in records:
-            if message.channel.id == record["channel_id"]:
-                webhook = await self.get_webhook(record["channel_id"])
-                if webhook:
-                    async with self.webhook_session.post(webhook.url, json={"content": message.content,
-                                                                            "username": message.author.name,
-                                                                            "avatar_url": message.author.avatar_url}) as response:
-                        pass
-
-    @commands.command()
-    @commands.has_permissions(manage_webhooks=True)
+    @discord.slash_command()
     async def addglobal(self, ctx, channel: discord.TextChannel):
-        async with self.bot.pool.acquire() as conn:
-            webhook = self.get_webhook(channel.id)
+        print("/addglobal was used")
+        # async with self.bot.pool.acquire() as conn:
+        print(channel.id)
+        webhook = await self.get_webhook(channel.id)
+        await ctx.respond(f"{channel.mention} wurde zum Global Chat hinzugefügt.")
+        print(channel.id)
+        try:
             db = await dbTools.get_DB_path()
-            id = await dbTools.get_next_id(db, "globalchat")
-            await dbTools.insert_data(db, "globalchat", id, channel.id, webhook)
-        await ctx.send(f"{channel.mention} wurde zum Global Chat hinzugefügt.")
+            await ctx.send("1")
+            id = await dbTools.get_next_id(db, "world_chats")
+            await ctx.send(id)
+            await dbTools.insert_data(db, "world_chats", id, channel.id, webhook)
+            await ctx.send("3")
+        except Exception as e:
+            print(e.with_traceback(e))
 
-    @commands.command()
-    @commands.has_permissions(manage_webhooks=True)
+    @discord.slash_command()
     async def removeglobal(self, ctx, channel: discord.TextChannel):
         async with self.bot.pool.acquire() as conn:
             db = await dbTools.get_DB_path()
             webhook = self.get_webhook(channel.id)
-            rows = await dbTools.view_data(db, "globalchat", 1)
+            rows = await dbTools.view_data(db, "world_chats", 1)
             for row in rows:
                 if row[1] == channel.id:
-                    await dbTools.delete_data(db, "globalchat", f"id={row[0]}")
-        await ctx.send(f"{channel.mention} wurde vom Global Chat entfernt.")
-
+                    await dbTools.delete_data(db, "world_chats", f"id={row[0]}")
+        await ctx.respond(f"{channel.mention} wurde vom Global Chat entfernt.")
 
 def setup(bot):
     bot.add_cog(GlobalChat(bot))

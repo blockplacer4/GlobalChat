@@ -21,9 +21,28 @@ async def test():
 
 
 async def g():
-    print(await dbTools.get_DC_token())
+    print(await dbTools.insert_data("./source/world.db", "world_chats", 1, 34345345, "webhook"))
 
 
 if __name__ == '__main__':
-    print(data)
     run(g())
+
+
+
+
+#
+#    @commands.Cog.listener()
+#    async def on_message(self, message):
+#        if message.author.bot:
+#            return
+#        db = await dbTools.get_DB_path()
+#        print(message.channel.id)
+#        data = await dbTools.view_data(db, "world_chats", "channel_id", message.channel.id)
+#        if data:
+#            webhook = await self.get_webhook(message.channel.id)
+#            if webhook:
+#                async with self.webhook_session.post(webhook.url, json={"content": message.content,
+#                                                                        "username": message.author.name,
+#                                                                        "avatar_url": message.author.avatar_url}) as response:
+#                    pass
+#
