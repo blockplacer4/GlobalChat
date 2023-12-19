@@ -34,29 +34,32 @@ class GlobalChat(commands.Cog):
     async def addglobal(self, ctx, channel: discord.TextChannel):
         print("/addglobal was used")
         # async with self.bot.pool.acquire() as conn:
-        print(channel.id)
-        webhook = await self.get_webhook(channel.id)
-        await ctx.respond(f"{channel.mention} wurde zum Global Chat hinzugefügt.")
-        print(channel.id)
-        try:
-            db = await dbTools.get_DB_path()
-            await ctx.send("1")
-            id = await dbTools.get_next_id(db, "world_chats")
-            await ctx.send(id)
-            await dbTools.insert_data(db, "world_chats", id, channel.id, webhook)
-            await ctx.send("3")
-        except Exception as e:
-            print(e.with_traceback(e))
+        if await dbTools.view_dat_row(await dbTools.get_DB_path(), "world_chats", "channel_id", channel.id):
+            await ctx.send(f"{channel.mention} ist bereits ein global chat zum entfernen benutze /removeglobal <channel>")
+        else:
+            print(channel.id)
+            webhook = await self.get_webhook(channel.id)
+            await ctx.respond(f"{channel.mention} wurde zum Global Chat hinzugefügt.")
+            print(channel.id)
+            try:
+                db = await dbTools.get_DB_path()
+                await ctx.send("1")
+                id = await dbTools.get_next_id(db, "world_chats")
+                await ctx.send(id)
+                await dbTools.insert_data(db, "world_chats", id, channel.id, webhook)
+                await ctx.send("3")
+            except Exception as e:
+                print(e.with_traceback(e))
 
     @discord.slash_command()
     async def removeglobal(self, ctx, channel: discord.TextChannel):
         async with self.bot.pool.acquire() as conn:
             db = await dbTools.get_DB_path()
             webhook = self.get_webhook(channel.id)
-            rows = await dbTools.view_data(db, "world_chats", 1)
+            rows = await dbTools.view_dat_row(db, "world_chats", "channel_id", channel.id)
             for row in rows:
                 if row[1] == channel.id:
-                    await dbTools.delete_data(db, "world_chats", f"id={row[0]}")
+                    await dbTools.delete_data(db, "world_chats", f"channel_id={channel.id}")
         await ctx.respond(f"{channel.mention} wurde vom Global Chat entfernt.")
 
 def setup(bot):

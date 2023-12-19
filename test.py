@@ -1,3 +1,4 @@
+import datetime
 from asyncio import run
 from source import dbTools
 
@@ -21,10 +22,11 @@ async def test():
 
 
 async def g():
-    print(await dbTools.insert_data("./source/world.db", "world_chats", 1, 34345345, "webhook"))
+    print(await dbTools.view_dat_row("./source/world.db", "world_chats", "id", "1"))
 
 
 if __name__ == '__main__':
+    print(datetime.datetime.now())
     run(g())
 
 
