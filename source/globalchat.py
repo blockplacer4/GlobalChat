@@ -2,6 +2,9 @@ import discord
 from discord.ext import commands
 import asyncpg
 import aiohttp
+from source import dbTools
+from configparser import ConfigParser
+import os
 
 
 class GlobalChat(commands.Cog):
@@ -17,7 +20,7 @@ class GlobalChat(commands.Cog):
         webhook = discord.utils.get(webhooks, name="GlobalChat")
         if not webhook:
             webhook = await channel.create_webhook(name="GlobalChat")
-        return webhook
+        return webhook.url
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.errors.CheckFailure):
@@ -42,16 +45,22 @@ class GlobalChat(commands.Cog):
     @commands.has_permissions(manage_webhooks=True)
     async def addglobal(self, ctx, channel: discord.TextChannel):
         async with self.bot.pool.acquire() as conn:
-            await conn.execute("INSERT INTO global_channels (guild_id, channel_id) VALUES ($1, $2)", ctx.guild.id,
-                               channel.id)
+            webhook = self.get_webhook(channel.id)
+            db = await dbTools.get_DB_path()
+            id = await dbTools.get_next_id(db, "globalchat")
+            await dbTools.insert_data(db, "globalchat", id, channel.id, webhook)
         await ctx.send(f"{channel.mention} wurde zum Global Chat hinzugefügt.")
 
     @commands.command()
     @commands.has_permissions(manage_webhooks=True)
     async def removeglobal(self, ctx, channel: discord.TextChannel):
         async with self.bot.pool.acquire() as conn:
-            await conn.execute("DELETE FROM global_channels WHERE guild_id = $1 AND channel_id = $2", ctx.guild.id,
-                               channel.id)
+            db = await dbTools.get_DB_path()
+            webhook = self.get_webhook(channel.id)
+            rows = await dbTools.view_data(db, "globalchat", 1)
+            for row in rows:
+                if row[1] == channel.id:
+                    await dbTools.delete_data(db, "globalchat", f"id={row[0]}")
         await ctx.send(f"{channel.mention} wurde vom Global Chat entfernt.")
 
 

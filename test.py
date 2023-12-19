@@ -1,25 +1,29 @@
-from cryptography.fernet import Fernet
+from asyncio import run
+from source import dbTools
 
-# Create a Fernet object
-fernet = Fernet.generate_key()
+data = {
+    "id": "int",
+    "channel_id": "int",
+    "webhook_url": "char*"
+}
 
-# Encrypt a message
-message = ""
-encrypted_message = fernet.encrypt(message.encode('utf-8'))
-print(encrypted_message)
 
-# Decrypt the message
-decrypted_message = fernet.decrypt(encrypted_message).decode('utf-8')
-print(decrypted_message)
+async def main():
+    await dbTools.create_database("test.db")
+    await dbTools.create_table("test.db", "globalchat", "id, channel_id, webhook_url")
 
-import cryptography.fernet as fernet
 
-def save_fernet_key(key, filename):
-    with open(filename, 'wb') as f:
-        f.write(key.encode())
+async def test():
+    # await dbTools.insert_data("test.db", "globalchat", "1", "321", "discord.com")
+    await dbTools.update_data("test.db", "globalchat", "1", "3", "123", "google.com")
+    # row = await dbTools.view_data("test.db", "globalchat", 1)
+    # print(row)
 
-def load_fernet_key(filename):
-    with open(filename, 'rb') as f:
-        key = f.read()
-        return fernet.Fernet(key)
 
+async def g():
+    print(await dbTools.get_DC_token())
+
+
+if __name__ == '__main__':
+    print(data)
+    run(g())
