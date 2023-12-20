@@ -9,7 +9,6 @@ import schedule
 async def clear_db():
     pass
 
-
 async def get_DB_path():
     config = ConfigParser()
     config.read("./source/configuration.cfg")
@@ -158,20 +157,36 @@ async def view_data(database_name, table_name, column, value):
         return rows
 
 
-async def update_data(database_name, table_name, condition_id, id, channel_id, webhook_url):
+async def update_data(database_name: str, table_name: str, condition_id: int, new_id: int, channel_id: int,
+                      webhook_url: str):
     conn = await aiosqlite.connect(database_name)
     cursor = await conn.cursor()
     await cursor.execute(f'UPDATE {table_name} SET id=?, channel_id=?, webhook_url=? WHERE id=?',
-                         (id, channel_id, webhook_url, condition_id))
+                         (new_id, channel_id, webhook_url, condition_id))
     await conn.commit()
     await cursor.close()
     await conn.close()
 
 
+async def get_colummn(database_name: str, table_name: str, colummn: str):
+    conn = await aiosqlite.connect(database_name)
+    cursor = await conn.cursor()
+    await cursor.execute(f'SELECT {colummn} FROM {table_name}')
+    data = await cursor.fetchone()
+    await conn.commit()
+    await cursor.close()
+    await conn.close()
+    print(data)
+    if not data:
+        print("There are no channels")
+    else:
+        return data
+
+
 async def delete_data(database_name, table_name, id):
     conn = await aiosqlite.connect(database_name)
     cursor = await conn.cursor()
-    await cursor.execute(f'DELETE FROM {table_name} WHERE id={id}')
+    await cursor.execute(f'DELETE FROM {table_name} WHERE channel_id={id}')
     await conn.commit()
     await cursor.close()
     await conn.close()
