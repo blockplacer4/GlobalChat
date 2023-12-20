@@ -79,10 +79,16 @@ class GlobalChat(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        print(message.channel.id)
         if not message.author.bot:
-            db = await dbTools.get_DB_path()
-            print(message.channel.id)
-            await self.send_global_message(message)
+            for channel_id in await dbTools.get_colummn("./source/world.db", "world_chats", "channel_id"):
+                print(channel_id)
+                if channel_id == message.channel.id:
+                    print(message.content)
+                    db = await dbTools.get_DB_path()
+                    print(message.channel.id)
+                    await self.send_global_message(message.content)
+                    await message.delete()
         pass
 
 
