@@ -3,11 +3,36 @@ import asyncio
 from configparser import ConfigParser
 import os
 import datetime
+
+import discord
 import schedule
 
 
-async def clear_db():
-    pass
+async def create_embed(server_name: str, author_icon: str, title: str, description: str, icon: str, footer: dict,
+                       fields: list):  # create_embed("Stupid Title", "Stupider description", "Nope", filed1_title="")
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=discord.Colour.red(),
+        timestamp=datetime.datetime.now()
+    )
+    print(server_name.split("https"))
+    print(author_icon)
+    # embed.set_author(str(server_name.split("https")), "", str(author_icon))
+    embed.set_author("Hi")
+    footer_icon = footer.get("icon_url")
+    footer_text = footer.get("text")
+    embed.set_footer(text=footer_text, icon_url=footer_icon)
+    icon, crap = icon.split("https")
+    if icon: embed.set_image(str(icon))
+    for field in fields:
+        name = field.get('name')
+        value = field.get('value')
+        inline = field.get('inline', False)
+        embed.add_field(name=name, value=value, inline=inline)
+    if type(embed) != discord.Embed: print("NOT AN EMBED")
+    return embed
+
 
 async def get_DB_path():
     config = ConfigParser()
@@ -40,66 +65,50 @@ async def get_DC_token():
 
 
 async def get_current_id(database_name, table_name):
-    print(1)
     conn = await aiosqlite.connect(database_name)
-    print(2)
     cursor = await conn.cursor()
-    print(3)
     try:
         await cursor.execute(f"SELECT COUNT(*) FROM {table_name};")  # f"SELECT COUNT(*) FROM {table_name};"
     except Exception as e:
         print(e.with_traceback(e))
-    print(4)
     try:
         next_id = await cursor.fetchall()
     except Exception as e:
         print(e.with_traceback(e))
         next_id = None
-    print(f"5 {next_id[0]}")
     try:
         await conn.close()
-        print(6)
         if next_id is None:
-            print("[FAIL] dbTools.py")
+            print("[FAIL] tools.py")
         else:
             return next_id
     except ValueError as e:
         print(e.with_traceback(e))
-        print(7)
     await conn.close()
 
 
 async def get_next_id(database_name, table_name):
-    print(1)
     conn = await aiosqlite.connect(database_name)
-    print(2)
     cursor = await conn.cursor()
-    print(3)
     try:
         await cursor.execute(f"SELECT COUNT(*) FROM {table_name};")  # f"SELECT COUNT(*) FROM {table_name};"
     except Exception as e:
         print(e.with_traceback(e))
-    print(4)
     try:
         next_id = await cursor.fetchall()
     except Exception as e:
         print(e.with_traceback(e))
         next_id = None
-    print(f"5 {next_id[0]}")
     try:
         await conn.close()
-        print(6)
         if next_id is None:
-            print("[FAIL] dbTools.py")
+            print("[FAIL] tools.py")
         else:
             next_number = next_id[0]
-            print(f"- {next_number}")
             next_number = next_number[0]
-            print(f"-- {next_number}")
             return next_number + 1
     except ValueError as e:
         print(e.with_traceback(e))
-        print(7)
     await conn.close()
 
 
@@ -121,7 +130,6 @@ async def create_table(database_name, table_name, *columns):
 async def insert_data(database_name, table_name, id, channel_id, webhook_url):
     conn = await aiosqlite.connect(database_name)
     cursor = await conn.cursor()
-    print(f'INSERT INTO {table_name} VALUES ({id}, {channel_id}, {webhook_url})')
     await cursor.execute(f"INSERT INTO {table_name} (id, channel_id, webhook_url) VALUES (?, ?, ?);",
                          (id, channel_id, webhook_url))
     await conn.commit()
@@ -132,10 +140,8 @@ async def insert_data(database_name, table_name, id, channel_id, webhook_url):
 async def view_dat_row(database_name, table_name, column, id):
     conn = await aiosqlite.connect(database_name)
     cursor = await conn.cursor()
-    print(f'SELECT * FROM {table_name} WHERE {column} = {str(id)}')
     await cursor.execute(f'SELECT * FROM {table_name} WHERE {column} = {str(id)}')
     rows = await cursor.fetchall()
-    print(rows)
     await cursor.close()
     await conn.close()
     if not rows:
@@ -172,11 +178,10 @@ async def get_colummn(database_name: str, table_name: str, colummn: str):
     conn = await aiosqlite.connect(database_name)
     cursor = await conn.cursor()
     await cursor.execute(f'SELECT {colummn} FROM {table_name}')
-    data = await cursor.fetchone()
+    data = await cursor.fetchall()
     await conn.commit()
     await cursor.close()
     await conn.close()
-    print(data)
     if not data:
         print("There are no channels")
     else:
