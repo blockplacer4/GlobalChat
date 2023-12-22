@@ -1,7 +1,7 @@
 import datetime
 from asyncio import run
 from source import tools
-
+import requests
 data = {
     "id": "int",
     "channel_id": "int",
@@ -27,7 +27,6 @@ async def g():
 
 if __name__ == '__main__':
     print(datetime.datetime.now())
-    run(g())
 
 fields = [
     {'name': 'Field 1', 'value': 'This is the first field'},

@@ -11,18 +11,21 @@ import sys
 console = Console()
 
 console.print("[[bold green]+[/bold green]] > Checking if Database exists")
-if not os.path.exists("./source/world.db"):
+if not os.path.exists("world.db"):
     console.print("[[bold yellow]![/bold yellow]] > Creating new database")
     asyncio.run(tools.create_database("./source/world.db"))
     console.print("[[bold yellow]![/bold yellow]] > Creating new database table")
     asyncio.run(tools.create_table("./source/world.db", "world_chats", "id, channel_id, webhook_url"))
 
-bot = discord.Bot(intents=discord.Intents.all())
+try:
+    bot = discord.Bot(intents=discord.Intents.all())
+except RuntimeError as e:
+    console.print("[[bold yellow]![/bold yellow]] > Colsing session")
+    sys.exit(0)
 
 
 async def get_server_count():
     return int(len(bot.guilds))
-
 
 @bot.event
 async def on_ready():

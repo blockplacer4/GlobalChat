@@ -31,7 +31,13 @@ class GlobalChat(commands.Cog):
             webhooks = await channel.webhooks()
             webhook = discord.utils.get(webhooks, name="GlobalChat")
             if not webhook:
-                webhook = await channel.create_webhook(name="GlobalChat")
+                async with aiohttp.ClientSession() as session:
+                    async with session.get("https://i.ibb.co/D96qZq7/KH75-World-Chat-2.png") as resp:
+                        if resp.status == 200:
+                            data = await resp.read()
+                            webhook = await channel.create_webhook(name="GlobalChat", avatar=data)
+                        else:
+                            return None
             return webhook.url
         except Exception as e:
             print(e.with_traceback(e))
@@ -58,6 +64,7 @@ class GlobalChat(commands.Cog):
 
     @discord.slash_command()
     async def addglobal(self, ctx, channel: discord.TextChannel):
+        print(channel.name)
         # async with self.bot.pool.acquire() as conn:
         if await tools.view_dat_row(await tools.get_DB_path(), "world_chats", "channel_id", channel.id):
             await ctx.respond(
@@ -101,6 +108,20 @@ class GlobalChat(commands.Cog):
                     # message.author.avatar)
                     await message.delete()
         pass
+
+    @commands.Cog.listener()
+    async def on_guild_channel_delete(self, channel):
+        db = await tools.get_DB_path()
+        data = await tools.get_colummn("./source/world.db", "world_chats", "channel_id")
+        print(data)
+        for i in data:
+            if str(channel.id) == i[0]:
+                try:
+                    await tools.delete_data(db, "worlds_chats", channel.id)
+                    print("global chat deleted")
+                    # hier embed senden
+                except Exception as e:
+                    print(e)
 
 
 def setup(bot):
