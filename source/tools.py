@@ -5,7 +5,6 @@ import os
 import datetime
 
 import discord
-import schedule
 
 
 async def create_embed(server_name: str, author_icon: str, title: str, description: str, icon: str, footer: dict,
@@ -19,7 +18,7 @@ async def create_embed(server_name: str, author_icon: str, title: str, descripti
     print(server_name.split("https"))
     print(author_icon)
     # embed.set_author(str(server_name.split("https")), "", str(author_icon))
-    embed.set_author("Hi")
+    embed.set_author(name=server_name, icon_url=author_icon)
     footer_icon = footer.get("icon_url")
     footer_text = footer.get("text")
     embed.set_footer(text=footer_text, icon_url=footer_icon)
