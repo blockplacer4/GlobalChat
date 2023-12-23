@@ -11,7 +11,7 @@ import sys
 console = Console()
 
 console.print("[[bold green]+[/bold green]] > Checking if Database exists")
-if not os.path.exists("world.db"):
+if not os.path.exists("./source/world.db"):
     console.print("[[bold yellow]![/bold yellow]] > Creating new database")
     asyncio.run(tools.create_database("./source/world.db"))
     console.print("[[bold yellow]![/bold yellow]] > Creating new database table")

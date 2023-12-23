@@ -10,8 +10,7 @@ data = {
 
 
 async def main():
-    await tools.create_database("test.db")
-    await tools.create_table("test.db", "globalchat", "id, channel_id, webhook_url")
+    await tools.create_table(await tools.get_DB_path(), "globalchat", "id, channel_id, webhook_url")
 
 
 async def test():
@@ -26,7 +25,7 @@ async def g():
 
 
 if __name__ == '__main__':
-    print(datetime.datetime.now())
+    run(main())
 
 fields = [
     {'name': 'Field 1', 'value': 'This is the first field'},

@@ -7,8 +7,8 @@ import datetime
 import discord
 
 
-async def create_embed(server_name: str, author_icon: str, title: str, description: str, icon: str, footer: dict,
-                       fields: list):  # create_embed("Stupid Title", "Stupider description", "Nope", filed1_title="")
+async def create_embed(server_name: str, author_icon: str, title: str, description: str, icon: str, footer: dict = None,
+                       fields: list = None, thumbnail_url: str = None):  # create_embed("Stupid Title", "Stupider description", "Nope", filed1_title="")
     embed = discord.Embed(
         title=title,
         description=description,
@@ -17,18 +17,23 @@ async def create_embed(server_name: str, author_icon: str, title: str, descripti
     )
     print(server_name.split("https"))
     print(author_icon)
+    if thumbnail_url:
+        embed.set_thumbnail(url=thumbnail_url)
     # embed.set_author(str(server_name.split("https")), "", str(author_icon))
     embed.set_author(name=server_name, icon_url=author_icon)
-    footer_icon = footer.get("icon_url")
-    footer_text = footer.get("text")
-    embed.set_footer(text=footer_text, icon_url=footer_icon)
+    if footer:
+        footer_icon = footer.get("icon_url")
+        footer_text = footer.get("text")
+        embed.set_footer(text=footer_text, icon_url=footer_icon)
     icon, crap = icon.split("https")
-    if icon: embed.set_image(str(icon))
-    for field in fields:
-        name = field.get('name')
-        value = field.get('value')
-        inline = field.get('inline', False)
-        embed.add_field(name=name, value=value, inline=inline)
+    if icon:
+        embed.set_image(str(icon))
+    if fields:
+        for field in fields:
+            name = field.get('name')
+            value = field.get('value')
+            inline = field.get('inline', False)
+            embed.add_field(name=name, value=value, inline=inline)
     if type(embed) != discord.Embed: print("NOT AN EMBED")
     return embed
 
