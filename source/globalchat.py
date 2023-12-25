@@ -16,12 +16,18 @@ class GlobalChat(commands.Cog):
         self.bot = bot
         self.webhook_session = aiohttp.ClientSession()
 
-    async def send_global_message(self, server_name: str, author_icon: str, message: str, author: str, avatar_url: str, footer: dict, fields: list, thumbnail_url: str = None):
-        for url in await tools.get_colummn("./source/world.db", "world_chats", "webhook_url"):
-            webhook = Webhook.from_url(str(url), session=self.webhook_session)
-            e = await tools.create_embed(server_name, author_icon, author, message, avatar_url, footer, fields, thumbnail_url)
-            a = e.copy()
-            await webhook.send(embed=e, avatar_url="https://i.ibb.co/D96qZq7/KH75-World-Chat-2.png")
+    async def send_global_message(self, server_name: str, author_icon: str, message: str, author: str, avatar_url: str,
+                                  footer: dict, fields: list, thumbnail_url: str = None):
+        for url in await tools.get_column("./source/world.db", "world_chats", "webhook_url"):
+            try:
+                webhook = Webhook.from_url(str(url), session=self.webhook_session)
+                e = await tools.create_embed(server_name, author_icon, author, message, avatar_url, footer, fields,
+                                             thumbnail_url)
+                a = e.copy()
+                await webhook.send(embed=e, avatar_url="https://i.ibb.co/D96qZq7/KH75-World-Chat-2.png")
+            except discord.NotFound as e:
+                print("Well some error, may there be a webhook in db that doesn't exist")
+                pass
 
     async def get_webhook(self, channel_id):
         try:
@@ -38,10 +44,10 @@ class GlobalChat(commands.Cog):
             print(5)
             if not webhook:
                 print("Webhook existiert nicht")
-                webhook = await channel.create_webhook(name="GlobalChat", avatar="https://i.ibb.co/D96qZq7/KH75-World-Chat-2.png")
+                webhook = await channel.create_webhook(name="GlobalChat")
                 print(webhook.url)
                 return webhook.url
-                #async with aiohttp.ClientSession() as session:
+                # async with aiohttp.ClientSession() as session:
                 #    async with session.get("https://i.ibb.co/D96qZq7/KH75-World-Chat-2.png") as resp:
                 #        if resp.status == 200:
                 #            data = await resp.read()
@@ -81,14 +87,21 @@ class GlobalChat(commands.Cog):
             await ctx.respond(
                 f"{channel.mention} ist bereits ein global chat zum entfernen benutze /removeglobal <channel>")
         else:
+            print("-")
             webhook = await self.get_webhook(channel.id)
             print(webhook)
             try:
+                print("--")
                 db = await tools.get_DB_path()
+                print("---")
                 id = await tools.get_next_id(db, "world_chats")
-                await tools.insert_data(db, "world_chats", id, channel.id, webhook)
+                print(f"db, 'world_chats', {id}, {channel.id}, {webhook}, {ctx.guild.id}")
+                await tools.insert_data(db, "world_chats", id, channel.id, webhook, ctx.guild.id)
+                print("------")
                 await ctx.respond(f"{channel.mention} wurde zum Global Chat hinzugefügt.")
+                print("000000000")
             except Exception as e:
+                print("WELL there was a error")
                 print(e.with_traceback(e))
 
     @discord.slash_command()
@@ -99,48 +112,50 @@ class GlobalChat(commands.Cog):
         await self.deletewebhook(channel.id)
         await ctx.respond(f"{channel.mention} wurde vom Global Chat entfernt.")
 
-    @discord.slash_command()
-    async def help(self, ctx):
-        ctx.respond(f"HELP")
-
     @commands.Cog.listener()
-    async def on_message(self, message):
-        if not message.author.bot:
-            for channel_id in await tools.get_colummn(await tools.get_DB_path(), "world_chats", "channel_id"):
-                if int(channel_id[0]) == message.channel.id:
-                    db = await tools.get_DB_path()
-                    footer = {
-                        "icon_url": self.bot.user.avatar,
-                        "text": f"Server anzahl: {await run.get_server_count()}"
-                    }
-                    fields = [
-                        {'name': '', 'value': '🤖 [Invite mich](https://world.killerhase75.com)', 'inline': True}
-                    ]
-                    print(message.guild.icon)
-                    if message.author.avatar:
-                        await self.send_global_message(message.guild.name, message.guild.icon, message.content,
-                                                       message.author.display_name, message.author.avatar.url, footer,
-                                                       fields, message.author.avatar)
-                    else:
-                        await self.send_global_message(message.guild.name, message.guild.icon, message.content, message.author.display_name, "https://i.ibb.co/D96qZq7/KH75-World-Chat-2.png", footer, fields)
-                    # await self.send_global_message(message.content, message.author.display_name,
-                    # message.author.avatar
-                    await message.delete()
-        pass
+    async def on_guild_remove(self, guild):
+        db = await tools.get_DB_path()
+        await tools.delete_server_data(db, "world_chats", f"{guild.id}")
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
         db = await tools.get_DB_path()
-        data = await tools.get_colummn(db, "world_chats", "channel_id")
-        print(data)
-        for i in data:
-            if str(channel.id) == i[0]:
-                try:
-                    await tools.delete_data(db, "worlds_chats", channel.id)
-                    print("global chat deleted")
-                    # hier embed senden
-                except Exception as e:
-                    print(e)
+        await tools.delete_data(db, "world_chats", f"{channel.id}")
+
+    @discord.slash_command()
+    async def help(self, ctx):
+        await ctx.respond(f"HELP ME I AM IN DANGER")
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if not message.author.bot:
+            try:
+                for channel_id in await tools.get_column(await tools.get_DB_path(), "world_chats", "channel_id"):
+                    if int(channel_id[0]) == message.channel.id:
+                        db = await tools.get_DB_path()
+                        footer = {
+                            "icon_url": self.bot.user.avatar,
+                            "text": f"Server anzahl: {await run.get_server_count()}"
+                        }
+                        fields = [
+                            {'name': '', 'value': '🤖 [Invite mich](https://world.killerhase75.com)', 'inline': True}
+                        ]
+                        print(message.guild.icon)
+                        if message.author.avatar:
+                            await self.send_global_message(message.guild.name, message.guild.icon, message.content,
+                                                           message.author.display_name, message.author.avatar.url, footer,
+                                                           fields, message.author.avatar)
+                        else:
+                            await self.send_global_message(message.guild.name, message.guild.icon, message.content,
+                                                           message.author.display_name,
+                                                           "https://i.ibb.co/D96qZq7/KH75-World-Chat-2.png", footer, fields)
+                        # await self.send_global_message(message.content, message.author.display_name,
+                        # message.author.avatar
+                        await message.delete()
+            except TypeError as e:
+                print("Database get column returned NONE")
+
+        pass
 
 
 def setup(bot):

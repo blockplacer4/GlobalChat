@@ -10,7 +10,7 @@ data = {
 
 
 async def main():
-    await tools.create_table(await tools.get_DB_path(), "globalchat", "id, channel_id, webhook_url")
+    await tools.create_table(await tools.get_DB_path(), "world_chats", "id, channel_id, webhook_url, guild_id")
 
 
 async def test():

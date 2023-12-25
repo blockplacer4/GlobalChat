@@ -1,7 +1,7 @@
 from asyncio import run
 import discord
 from discord.ext import tasks
-import asyncio
+import asyncio # Du stinkst!
 import requests
 import os
 from source import tools, globalchat
@@ -11,16 +11,16 @@ import sys
 console = Console()
 
 console.print("[[bold green]+[/bold green]] > Checking if Database exists")
-if not os.path.exists("./source/world.db"):
+if not os.path.exists("world.db"):
     console.print("[[bold yellow]![/bold yellow]] > Creating new database")
     asyncio.run(tools.create_database("./source/world.db"))
     console.print("[[bold yellow]![/bold yellow]] > Creating new database table")
-    asyncio.run(tools.create_table("./source/world.db", "world_chats", "id, channel_id, webhook_url"))
+    asyncio.run(tools.create_table("./source/world.db", "world_chats", "id, channel_id, webhook_url, guild_id"))
 
 try:
     bot = discord.Bot(intents=discord.Intents.all())
 except RuntimeError as e:
-    console.print("[[bold yellow]![/bold yellow]] > Colsing session")
+    console.print("[[bold yellow]![/bold yellow]] > Closing session")
     sys.exit(0)
 
 
